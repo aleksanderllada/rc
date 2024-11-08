@@ -10,9 +10,9 @@ export PATH=$PATH:/Users/aleksander/go/bin
 # Required for rbenv to work properly
 export PATH="$HOME/.rbenv/shims:$PATH"
 
-PROMPT_COMMAND="check_and_reload_bash_aliases"
+export PROMPT_COMMAND="check_and_reload_bash_aliases"
 check_and_reload_bash_aliases () {
-  if [ "$(stat -f "%m" ~/.bash_aliases)" != $BASH_ALIASES_MTIME ]; then
+  if [ "$(stat -f "%m" ~/.bash_aliases)" != "$BASH_ALIASES_MTIME" ]; then
     export BASH_ALIASES_MTIME="$(stat -f "%m" ~/.bash_aliases)"
     echo "bash_aliases changed. re-sourcing..." >&2
     . ~/.bash_aliases
