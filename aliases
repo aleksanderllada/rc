@@ -1,0 +1,271 @@
+export CLICOLOR=1
+
+alias reload="source ~/.zshrc"
+
+######################### TYPOS AND SHORTCUTS #################################
+alias l="ls"
+alias sl="ls"
+alias la="ls -lash"
+alias v="vim"
+alias k="kubectl"
+
+################################# UTILITIES ###################################
+function cd {
+  pushd "$1" > /dev/null
+}
+
+function pd {
+  popd > /dev/null
+}
+
+function awkcolumn {
+  col=${1:-1}
+  awk '{print $'$col'}'
+}
+
+function b64d {
+  decoded="$(echo -n "${1}" | base64 -d)"
+  echo $decoded
+  echo $decoded | pbcopy
+}
+
+# Generate a random string
+function random { 
+  str=$(openssl rand -hex $1)
+  echo ${str:0:$1}
+}
+
+# Fzf
+alias f="fzf --height 40% --layout reverse --border --preview 'bat --color=always {}' --preview-window right"
+
+function fv {
+  file=$(f)
+  vim $file
+}
+
+function fcd {
+  dir=$(f)
+  if [[ -d $dir ]]; then
+    cd $dir
+  elif [[ -f $dir ]]; then
+    cd $(dirname $dir)
+  fi
+}
+
+# Ag replace all ocurrences of a string in a directory
+function agr { ag -0 -l "$1" | xargs -0 perl -pi -e "s/$1/$2/g"; }
+
+################################### GIT #######################################
+alias g="git"
+alias gs="git status"
+alias gd="git diff ."
+alias gl="git log"
+alias gb="git branch"
+alias gc="git commit -m"
+
+function gpush {
+  git push $1 origin `git branch --show-current`
+}
+
+function gpull {
+  git pull $1 origin `git branch --show-current`
+}
+
+# Git commit --amend + force push
+function gcafp {
+  git status
+  echo "The changes staged above will be committed."
+  git commit --amend --no-edit
+  git push -f origin `git branch --show-current`
+}
+
+function gclean {
+  git branch --merged | egrep -v "(^\*|master|main)" | xargs git branch -d
+}
+
+################################ KUBERNETES ###################################
+
+alias kcontext="kubectl config current-context"
+
+alias ksns="kubectl config set-context --current --namespace"
+
+alias kdebugpod="kubectl run -i --tty ubuntu --image=ubuntu --restart=Never -- sh"
+
+# Utilities =================
+
+function kdel {
+  NS=${1:-default};
+  kubectl get pods -n $NS | grep $2 | awk '{print $1}' | xargs kubectl delete pod -n $NS;
+}
+
+function kexec {
+  NS=${1:-default}; 
+  kubectl exec -it -n $NS $(k get pods -n $NS | grep -v NAME | grep ${2} | awk '{print $1}') -- ${3:-sh} "${@:4}";
+}
+
+function klogs {
+  NS=${1:-default};
+  kubectl logs -n $NS ${3} $(k get pods -n $NS | grep -v NAME | grep ${2} | awk '{print $1}');
+}
+
+function kpods {
+  NS=${1:-default};
+  kubectl get pods -n $NS;
+}
+
+################################## AWS ########################################
+
+alias awsaccount="aws iam list-account-aliases | jq '.AccountAliases[0]' | tr -d '\"'"
+alias unsetaws="unset AWS_ACCESS_KEY_ID; unset AWS_SECRET_ACCESS_KEY; unset AWS_SESSION_TOKEN"
+
+function eaws { 
+  echo "Exporting AWS credentials for `cat ~/.aws/credentials | grep "\[$1\]" | awk '{print $1}'`"
+  export AWS_ACCESS_KEY_ID=`cat ~/.aws/credentials | grep -A 2 "\[$1\]" | grep aws_access_key_id | awk '{print $3}'`;
+  export AWS_SECRET_ACCESS_KEY=`cat ~/.aws/credentials | grep -A 2 "\[$1\]" | grep aws_secret_access_key | awk '{print $3}'`;
+}
+
+# Github Copilot =============
+ghcs() {
+	FUNCNAME="$funcstack[1]"
+	TARGET="shell"
+	local GH_DEBUG="$GH_DEBUG"
+	local GH_HOST="$GH_HOST"
+
+	read -r -d '' __USAGE <<-EOF
+	Wrapper around \`gh copilot suggest\` to suggest a command based on a natural language description of the desired output effort.
+	Supports executing suggested commands if applicable.
+
+	USAGE
+	  $FUNCNAME [flags] <prompt>
+
+	FLAGS
+	  -d, --debug           Enable debugging
+	  -h, --help            Display help usage
+	      --hostname        The GitHub host to use for authentication
+	  -t, --target target   Target for suggestion; must be shell, gh, git
+	                        default: "$TARGET"
+
+	EXAMPLES
+
+	- Guided experience
+	  $ $FUNCNAME
+
+	- Git use cases
+	  $ $FUNCNAME -t git "Undo the most recent local commits"
+	  $ $FUNCNAME -t git "Clean up local branches"
+	  $ $FUNCNAME -t git "Setup LFS for images"
+
+	- Working with the GitHub CLI in the terminal
+	  $ $FUNCNAME -t gh "Create pull request"
+	  $ $FUNCNAME -t gh "List pull requests waiting for my review"
+	  $ $FUNCNAME -t gh "Summarize work I have done in issues and pull requests for promotion"
+
+	- General use cases
+	  $ $FUNCNAME "Kill processes holding onto deleted files"
+	  $ $FUNCNAME "Test whether there are SSL/TLS issues with github.com"
+	  $ $FUNCNAME "Convert SVG to PNG and resize"
+	  $ $FUNCNAME "Convert MOV to animated PNG"
+	EOF
+
+	local OPT OPTARG OPTIND
+	while getopts "dht:-:" OPT; do
+		if [ "$OPT" = "-" ]; then     # long option: reformulate OPT and OPTARG
+			OPT="${OPTARG%%=*}"       # extract long option name
+			OPTARG="${OPTARG#"$OPT"}" # extract long option argument (may be empty)
+			OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
+		fi
+
+		case "$OPT" in
+			debug | d)
+				GH_DEBUG=api
+				;;
+
+			help | h)
+				echo "$__USAGE"
+				return 0
+				;;
+
+			hostname)
+				GH_HOST="$OPTARG"
+				;;
+
+			target | t)
+				TARGET="$OPTARG"
+				;;
+		esac
+	done
+
+	# shift so that $@, $1, etc. refer to the non-option arguments
+	shift "$((OPTIND-1))"
+
+	TMPFILE="$(mktemp -t gh-copilotXXXXXX)"
+	trap 'rm -f "$TMPFILE"' EXIT
+	if GH_DEBUG="$GH_DEBUG" GH_HOST="$GH_HOST" gh copilot suggest -t "$TARGET" "$@" --shell-out "$TMPFILE"; then
+		if [ -s "$TMPFILE" ]; then
+			FIXED_CMD="$(cat $TMPFILE)"
+			print -s "$FIXED_CMD"
+			echo
+			eval "$FIXED_CMD"
+		fi
+	else
+		return 1
+	fi
+}
+
+ghce() {
+	FUNCNAME="$funcstack[1]"
+	local GH_DEBUG="$GH_DEBUG"
+	local GH_HOST="$GH_HOST"
+
+	read -r -d '' __USAGE <<-EOF
+	Wrapper around \`gh copilot explain\` to explain a given input command in natural language.
+
+	USAGE
+	  $FUNCNAME [flags] <command>
+
+	FLAGS
+	  -d, --debug      Enable debugging
+	  -h, --help       Display help usage
+	      --hostname   The GitHub host to use for authentication
+
+	EXAMPLES
+
+	# View disk usage, sorted by size
+	$ $FUNCNAME 'du -sh | sort -h'
+
+	# View git repository history as text graphical representation
+	$ $FUNCNAME 'git log --oneline --graph --decorate --all'
+
+	# Remove binary objects larger than 50 megabytes from git history
+	$ $FUNCNAME 'bfg --strip-blobs-bigger-than 50M'
+	EOF
+
+	local OPT OPTARG OPTIND
+	while getopts "dh-:" OPT; do
+		if [ "$OPT" = "-" ]; then     # long option: reformulate OPT and OPTARG
+			OPT="${OPTARG%%=*}"       # extract long option name
+			OPTARG="${OPTARG#"$OPT"}" # extract long option argument (may be empty)
+			OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
+		fi
+
+		case "$OPT" in
+			debug | d)
+				GH_DEBUG=api
+				;;
+
+			help | h)
+				echo "$__USAGE"
+				return 0
+				;;
+
+			hostname)
+				GH_HOST="$OPTARG"
+				;;
+		esac
+	done
+
+	# shift so that $@, $1, etc. refer to the non-option arguments
+	shift "$((OPTIND-1))"
+
+	GH_DEBUG="$GH_DEBUG" GH_HOST="$GH_HOST" gh copilot explain "$@"
+}
