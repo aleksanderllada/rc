@@ -1,16 +1,14 @@
 return {
   "folke/neodev.nvim",
-  "folke/which-key.nvim",
   "nvim-telescope/telescope.nvim",
   "RRethy/vim-illuminate",
   "nvim-lualine/lualine.nvim",
   "Shatur/neovim-ayu",
   "Mr-LLLLL/interestingwords.nvim",
   "nvim-treesitter/nvim-treesitter",
-  "neovim/nvim-lspconfig",
   "williamboman/mason.nvim",
   "williamboman/mason-lspconfig.nvim",
-  "simrat39/rust-tools.nvim",
+  -- "simrat39/rust-tools.nvim",
   "hashivim/vim-terraform",
   "petertriho/nvim-scrollbar",
   { "FabianWirth/search.nvim",
@@ -21,6 +19,19 @@ return {
   { 'akinsho/toggleterm.nvim', version = "*", config = true },
 
   {
+    'wsdjeg/vim-fetch',
+    event = { 'BufReadPre', 'BufNewFile' },
+  },
+
+  { "folke/which-key.nvim",
+    opts = {
+      preset = "helix",
+      win = {
+      }
+    }
+  },
+
+  {
     "f-person/git-blame.nvim",
     event = "VeryLazy",
     opts = {
@@ -28,7 +39,7 @@ return {
       message_template = " <author> • <date> • <summary> • <<sha>>", -- template for the blame message, check the Message template section for more options
       date_format = "%d/%m/%y %H:%M", -- template for the date, check Date format section for more options
       display_virtual_text = 0, -- disable virtual text
-      virtual_text_column = 80,
+      virtual_text_column = 120,
       max_commit_summary_length = 40
     }
   },
@@ -98,56 +109,6 @@ return {
     end
   },
 
-  { "zbirenbaum/copilot.lua",
-    cmd = "Copilot",
-    event = "InsertEnter",
-    config = function()
-      require("copilot").setup({
-        panel = {
-          enabled = false,
-          auto_refresh = false,
-          keymap = {
-            jump_prev = "[[",
-            jump_next = "]]",
-            accept = "<CR>",
-            refresh = "gr",
-            open = "<M-CR>"
-          },
-          layout = {
-            position = "bottom", -- | top | left | right | horizontal | vertical
-            ratio = 0.4
-          },
-        },
-        suggestion = {
-          enabled = false,
-          auto_trigger = true,
-          hide_during_completion = true,
-          debounce = 75,
-          keymap = {
-            accept = "<S-Tab>",
-            accept_word = false,
-            accept_line = false,
-            next = "<S-Right>",
-            prev = "<S-Left>",
-            dismiss = "<C-]>",
-          },
-        },
-        filetypes = {
-          markdown = true,
-          help = true,
-          gitcommit = false,
-          gitrebase = false,
-          hgcommit = false,
-          svn = false,
-          cvs = false,
-          ["."] = false,
-        },
-        copilot_node_command = 'node', -- Node.js version must be > 18.x
-        server_opts_overrides = {},
-      })
-    end,
-  },
-
   { 'romgrk/barbar.nvim',
     dependencies = {
       'lewis6991/gitsigns.nvim', -- OPTIONAL: for git status
@@ -171,21 +132,21 @@ return {
 
   { "neovim/nvim-lspconfig",
     lazy = false,
-    dependencies = {
-      { "ms-jpq/coq_nvim", branch = "coq" },
-      { "ms-jpq/coq.artifacts", branch = "artifacts" },
-      { 'ms-jpq/coq.thirdparty', branch = "3p" }
-    },
-    init = function()
-      vim.g.coq_settings = {
-          auto_start = 'shut-up',
-          completion = {
-            always = false,
-          },
-      }
-    end,
-    config = function()
-    end,
+    -- dependencies = {
+    --   { "ms-jpq/coq_nvim", branch = "coq" },
+    --   { "ms-jpq/coq.artifacts", branch = "artifacts" },
+    --   { 'ms-jpq/coq.thirdparty', branch = "3p" }
+    -- },
+    -- init = function()
+    --   vim.g.coq_settings = {
+    --       auto_start = 'shut-up',
+    --       completion = {
+    --         always = true,
+    --       },
+    --   }
+    -- end,
+    -- config = function()
+    -- end,
   },
 
   { "ray-x/go.nvim",
@@ -213,7 +174,7 @@ return {
             name = "anthropic",
             endpoint = "https://api.anthropic.com/v1/messages",
             model_endpoint = "https://api.anthropic.com/v1/models",
-            api_key = "<redacted>",
+            api_key = "",
             params = {
               chat = { max_tokens = 4096 },
               command = { max_tokens = 4096 },

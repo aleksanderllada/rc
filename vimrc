@@ -24,10 +24,13 @@ Plugin 'ayu-theme/ayu-vim'
 Plugin 'ghifarit53/tokyonight-vim'
 Plugin 'tpope/vim-fugitive'
 Plugin 'gcmt/taboo.vim'
+Plugin 'dylon/vim-antlr'
 call vundle#end()
 
-"Allow backspace in insert mode
 set backspace=indent,eol,start
+
+"Recognize Jenkinsfile as groovy
+au BufNewFile,BufRead Jenkinsfile setf groovy
 
 "Encoding
 set encoding=utf-8
@@ -59,14 +62,8 @@ set expandtab
 "Always show tabline
 set showtabline=2
 
-"Show numbers
-set number
-
-"Use the new regex engine
-set re=2
-
-"Activate syntax
-syntax on
+"Don't overwrite the register when pasting
+xnoremap p P
 
 "Set terminal colors
 if (has("termguicolors"))
@@ -94,8 +91,8 @@ let g:terraform_fmt_on_save=1
 let g:go_fmt_command="gofmt"
 let g:go_imports_autosave=0
 
-"Recognize Jenkinsfile as groovy
-au BufNewFile,BufRead Jenkinsfile setf groovy
+"Numbers
+set number
 
 filetype plugin indent on
 autocmd BufEnter * lcd %:p:h
@@ -103,25 +100,31 @@ autocmd BufEnter * lcd %:p:h
 "Nerdtree shortcuts
 let NERDTreeShowHidden=1
 
-" Exit Vim if NERDTree is the only window remaining in the only tab.
+"Exit Vim if NERDTree is the only window remaining in the only tab.
 autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | call feedkeys(":quit\<CR>:\<BS>") | endif
 
-" Open NERDTree when Vim is started without file arguments.
+"Open NERDTree when Vim is started without file arguments.
 autocmd VimEnter * if argc() == 0 && !exists("b:NERDTree") | NERDTree | endif
 
-" Open the existing NERDTree on each new tab.
+"Open the existing NERDTree on each new tab.
 autocmd BufWinEnter * if &buftype != 'quickfix' && getcmdwintype() == '' | NERDTreeMirror | endif
 
-" Set NERDTree to open the current file's directory.
+"Set NERDTree to open the current file's directory.
 autocmd BufReadPost * NERDTreeFind | wincmd p
 
-" Set NERDTree window size
-let g:NERDTreeWinSize=40
+"Set NERDTree window size
+let g:NERDTreeWinSize=45
+
+"Use the newer regexp engine
+set re=2
+
+"Activate syntax
+syntax on
 
 "Automatically go to the right tab (S-Right command)
 autocmd vimenter * wincmd l
 
-"Toggle side bar and numbers on Ctrl+C (copy mode)
+"Toggle side bar (copy mode)
 function! NumberNo()
   set nonumber
   map <F12> :call NumberYes()<CR>
@@ -138,39 +141,41 @@ map <C-c> :NERDTreeToggle<CR><C-w>l<F12>
 nmap <CR> <Leader>k
 nmap <S-c> <Leader>K
 
-"Quit all on Shift+e
+"Quit all
 nmap <S-e> :qa<CR>
 
-"Close window on Shift+c
+"Close window
 nmap <S-c> :q<CR>
 
-"Write all on Shift+w
+"Write all
 nmap <S-w> :wa<CR>
 
-"Fuzzy Finder Files on Ctrl+f
+"Fuzzy Finder Files
 nmap <C-f> :Files<CR>
 
-"Fuzzy Finder Lines on Shift+f
+"Fuzzy Finder Lines
 nmap <S-f> :Lines<CR>
 
-"Ag search on Shift+g
+"Ag search
 nmap <S-g> :Ag<CR>
 
-"Git history on Ctrl+h
+"Git history
 nmap <C-h> :BCommits<CR>
 
-"Syntastic check on Shift+c
+"Syntastic check
 nnoremap <S-c> :SyntasticCheck<CR>
 
-"Move between windows in NerdTree with Shift+Arrows
+"Move between windows in NerdTree
 nmap <S-Right> <C-w>l
 nmap <S-Left> <C-w>h
 nmap <S-Up> <C-w>k
 nmap <S-Down> <C-w>j
 
-"Move between tabs with Ctrl+Arrows
+"Move between tabs
 nnoremap <C-Left> :tabprevious<CR>
 nnoremap <C-Right> :tabnext<CR>
+nnoremap <Tab> :tabnext<CR>
+nnoremap <S-Tab> :tabprevious<CR>
 
 "Comment lines with ctrl + /
 nmap <C-_> gcc

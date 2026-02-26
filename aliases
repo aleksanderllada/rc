@@ -2,16 +2,79 @@ export CLICOLOR=1
 
 alias reload="source ~/.zshrc"
 
+## CLOUD ##
+alias ssh-cloud="ssh 178.156.229.208"
+
 ######################### TYPOS AND SHORTCUTS #################################
 alias l="ls"
 alias sl="ls"
-alias la="ls -lash"
-alias v="vim"
-alias k="kubectl"
+alias ll="ls -lash"
+alias vim="nvim"
+alias v="nvim"
+alias dcp="docker-compose"
+alias claude-dsp="claude --dangerously-skip-permissions"
+
+################################ EPIC GAMES ###################################
+export EG="/Users/aleksanderarruda/dev/epicgames"
+export EGMR="/Users/aleksanderarruda/dev/epicgames/github/monorepo"
+export EGINF="/Users/aleksanderarruda/dev/epicgames/github/monorepo/infra-v2"
+export EGTFM="/Users/aleksanderarruda/dev/epicgames/github/monorepo/infra-v2/terraform-modules"
+export EGMGMT="/Users/aleksanderarruda/dev/epicgames/github/monorepo/infra-v2/mgmt"
+export EGNONPROD="/Users/aleksanderarruda/dev/epicgames/github/monorepo/infra-v2/nonprod"
+export EGPROD="/Users/aleksanderarruda/dev/epicgames/github/monorepo/infra-v2/prod"
+alias cdeg="cd ~/dev/epicgames"
+alias cdmr="cd ~/dev/epicgames/github/monorepo"
+alias cdinf="cd ~/dev/epicgames/github/monorepo/infra-v2"
+alias cdtfm="cd ~/dev/epicgames/github/monorepo/infra-v2/terraform-modules"
+alias cdmgmt="cd ~/dev/epicgames/github/monorepo/infra-v2/mgmt"
+alias cdnonprod="cd ~/dev/epicgames/github/monorepo/infra-v2/nonprod"
+alias cdprod="cd ~/dev/epicgames/github/monorepo/infra-v2/prod"
+
+function sshj {
+  env=${1}
+  key=${2}
+  ip=${3}
+  ssh -J ubuntu@jumphost.${env}.ucs.on.epicgames.com -i ~/.ssh/id_ed25519 -i ${key} ${ip}
+}
+
+alias sshjmgmt="sshj mgmt"
+alias sshjnonprod="sshj nonprod"
+alias sshjprod="sshj prod"
+
+alias tdig='dig +short @10.200.20.5 '
 
 ################################# UTILITIES ###################################
 function cd {
-  pushd "$1" > /dev/null
+  DIRECTORY=$1
+  if [[ "$1" = "m" || "$1" = "np" || "$1" = "p" ]]; then
+    if [[ "$1" = "np" ]]; then EGENV="nonprod"; fi
+    if [[ "$1" = "p" ]]; then EGENV="prod"; fi
+    if [[ "$1" = "m" ]]; then EGENV="mgmt"; fi
+    DIRECTORY="$EGINF/$EGENV"
+    case "$2" in
+      "tf")
+        DIRECTORY="$EGINF/$EGENV/terraform"
+        ;;
+      "k8s")
+        DIRECTORY="$EGINF/$EGENV/k8s/us-east-1" # Default to us-east-1
+        case "$3" in
+          "use1")
+            DIRECTORY="$EGINF/$EGENV/k8s/us-east-1"
+            ;;
+          "use2")
+            DIRECTORY="$EGINF/$EGENV/k8s/us-east-2"
+            ;;
+          "euw1")
+            DIRECTORY="$EGINF/$EGENV/k8s/eu-west-1"
+            ;;
+        esac
+        ;;
+    esac
+  elif [[ "$1" = "tfm" ]]; then
+    DIRECTORY="$EGTFM"
+  fi
+
+  pushd "$DIRECTORY" > /dev/null
 }
 
 function pd {
@@ -29,6 +92,25 @@ function b64d {
   echo $decoded | pbcopy
 }
 
+alias todo="~/dev/personal/scripts/todo.sh"
+alias todoc="~/dev/personal/scripts/todo.sh check"
+alias todou="~/dev/personal/scripts/todo.sh uncheck"
+alias todosp="~/dev/personal/scripts/todo.sh set-default personal"
+alias todoseg="~/dev/personal/scripts/todo.sh set-default epicgames"
+
+# Todoist
+alias td="todoist"
+alias tdeg="todoist add --project-name 'Epic Games'"
+alias tdp="todoist add --project-name Personal"
+alias tdl="todoist list"
+alias tdleg="todoist list | grep #Epic"
+alias tdlp="todoist list | grep #Personal"
+alias tdc="todoist close"
+
+# taskline
+alias tleg="tl -b epicgames"
+alias tlp="tl -b personal"
+
 # Generate a random string
 function random { 
   str=$(openssl rand -hex $1)
@@ -36,15 +118,19 @@ function random {
 }
 
 # Fzf
-alias f="fzf --height 40% --layout reverse --border --preview 'bat --color=always {}' --preview-window right"
+alias fz="fzf --height 40% --layout reverse --border --preview 'bat --color=always {}' --preview-window right"
 
-function fv {
-  file=$(f)
-  vim $file
+function ff {
+  file=$(fz)
+  nvim $file
+}
+
+function f {
+  ag --nobreak --noheading . | fzf --delimiter=: --nth=2.. --cycle --height 40% --border --preview-window right --preview 'line={2}; start=$((line>7 ? line-7 : 1)); bat --color=always --highlight-line $line -r $start:$((line+16)) {1}' --bind enter:'become(nvim {1}:{2})'
 }
 
 function fcd {
-  dir=$(f)
+  dir=$(fz)
   if [[ -d $dir ]]; then
     cd $dir
   elif [[ -f $dir ]]; then
@@ -55,6 +141,20 @@ function fcd {
 # Ag replace all ocurrences of a string in a directory
 function agr { ag -0 -l "$1" | xargs -0 perl -pi -e "s/$1/$2/g"; }
 
+# Jira
+function j {
+  export JIRA_API_TOKEN=$(cat ~/dev/epicgames/tokens/jira-write)
+  jira "$@"
+}
+
+function jcreate {
+  export JIRA_API_TOKEN=$(cat ~/dev/epicgames/tokens/jira-write)
+  SUMMARY=$1
+  DESCRIPTION=$2
+  COMPONENT=${3:-"URC - Core - Infra"}
+  jira issue create -tTask -y "P1" -C $COMPONENT -s $SUMMARY -b $DESCRIPTION
+}
+
 ################################### GIT #######################################
 alias g="git"
 alias gs="git status"
@@ -62,9 +162,14 @@ alias gd="git diff ."
 alias gl="git log"
 alias gb="git branch"
 alias gc="git commit -m"
+alias gcane="git commit --amend --no-edit"
 
 function gpush {
   git push $1 origin `git branch --show-current`
+}
+
+function gpushf {
+  git push --force origin `git branch --show-current`
 }
 
 function gpull {
@@ -79,17 +184,60 @@ function gcafp {
   git push -f origin `git branch --show-current`
 }
 
+function gswitchaleksander {
+  git config --global user.name "Aleksander Arruda"
+  git config --global user.email "aleksanderllada@gmail.com"
+}
+
+function gswitchscanifly {
+  git config --global user.name "Aleksander Arruda"
+  git config --global user.email "aleksander.lada@scanifly.com"
+}
+
+function gswitchepicgames {
+  git config --global user.name "Aleksander Arruda"
+  git config --global user.email "aleksander.arruda@xa.epicgames.com"
+}
+
 function gclean {
   git branch --merged | egrep -v "(^\*|master|main)" | xargs git branch -d
 }
 
-################################ KUBERNETES ###################################
+#### NOMAD ####
+alias n="nomad"
 
+function nomad-login {
+  if [ -z "$NOMAD_ADDR" ]; then
+    if [ $# -eq 0 ]; then
+      echo "Missing address to the Nomad cluster. Either export the NOMAD_ADDR environment variable or run 'nomad-login <address>'"
+      return
+    fi
+    export NOMAD_ADDR="$1"
+  fi
+
+  echo "Authenticating to $NOMAD_ADDR"
+  export NOMAD_TOKEN=$(nomad login -json | jq -r ".SecretID")
+}
+
+alias nomad-login-urc-nonprod="nomad-login https://nomad-urc.use2.nonprod.ucs.on.epicgames.com"
+alias nomad-login-urc-internal="nomad-login https://nomad-urc-internal.use2.prod.ucs.on.epicgames.com"
+alias nomad-login-urc-uefn="nomad-login https://nomad-urc-uefn.use2.prod.ucs.on.epicgames.com"
+alias nomad-login-rc-nonprod="nomad-login https://nomad-rc.use2.aadd-dev.internal.epicgames.net"
+
+################################ KUBERNETES ###################################
+alias k="kubectl"
 alias kcontext="kubectl config current-context"
 
 alias ksns="kubectl config set-context --current --namespace"
 
-alias kdebugpod="kubectl run -i --tty ubuntu --image=ubuntu --restart=Never -- sh"
+alias kdebugpod="kubectl run -i --rm --tty ubuntu --image=ubuntu --restart=Never -- /bin/bash"
+
+# Allierce
+alias usekalliercedev="kubectl config use-context arn:aws:eks:us-east-1:886636814571:cluster/allierce-development"
+
+# Scanifly
+alias usekscanifly="kubectl config use-context arn:aws:eks:us-east-1:644824609692:cluster/scanifly-production"
+alias usekscaniflygke="kubectl config use-context gke_disco-torus-167918_us-east1_cluster-1"
 
 # Utilities =================
 
@@ -111,6 +259,14 @@ function klogs {
 function kpods {
   NS=${1:-default};
   kubectl get pods -n $NS;
+}
+
+function ksecret {
+  NS=${1:-default};
+  SECRET_NAME=${2};
+  SECRET_KEY=${3};
+
+  kubectl get secrets -n monitoring ${SECRET_NAME} -o yaml | grep ${SECRET_KEY} | sed "s/[[:space:]]*${SECRET_KEY}:[[:space:]]//g" | base64 -d
 }
 
 ################################## AWS ########################################

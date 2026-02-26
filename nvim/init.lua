@@ -56,13 +56,14 @@ require("config.lazy")
 -- ayu theme
 require('ayu').setup({})
 local colors = require('ayu.colors')
+vim.cmd([[colorscheme ayu]])
 
-vim.api.nvim_create_autocmd("VimEnter", {
-  nested = true,
-  callback = function()
-    pcall(vim.cmd.colorscheme, "ayu")
-  end,
-})
+-- vim.api.nvim_create_autocmd("VimEnter", {
+--   nested = true,
+--   callback = function()
+--     pcall(vim.cmd.colorscheme, "ayu")
+--   end,
+-- })
 
 -- Setup treesitter --
 ----------------------
@@ -106,10 +107,10 @@ require("scrollbar").setup({
 -- Setup LSP --
 ---------------
 vim.lsp.enable('terraformls')
-vim.lsp.config('terraformls', {
-  filetypes = { "terraform", },
-  cmd = { 'terraform-ls', 'serve', '-log-file', vim.fs.dirname(require('vim.lsp.log').get_filename()) .. "/terraform-ls.log" },
-})
+-- vim.lsp.config('terraformls', {
+--   filetypes = { "terraform", "terraform-vars" },
+--   cmd = { 'terraform-ls', 'serve', '-log-file', vim.fs.dirname(require('vim.lsp.log').get_filename()) .. "/terraform-ls.log" },
+-- })
 
 -- Setup mason --
 -----------------
@@ -126,18 +127,18 @@ require("mason-lspconfig").setup()
 
 -- Setup rust-tools --
 ----------------------
-local rt = require("rust-tools")
+-- local rt = require("rust-tools")
 
-rt.setup({
-  server = {
-    on_attach = function(_, bufnr)
-      -- Hover actions
-      vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
-      -- Code action groups
-      vim.keymap.set("n", "<Leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
-    end,
-  },
-})
+-- rt.setup({
+--   server = {
+--     on_attach = function(_, bufnr)
+--       -- Hover actions
+--       vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
+--       -- Code action groups
+--       vim.keymap.set("n", "<Leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
+--     end,
+--   },
+-- })
 
 -- Setup nvim-tree --
 ---------------------
@@ -316,8 +317,8 @@ require("search").setup({
 })
 
 vim.keymap.set('n', '<S-f>', function()
-    local w = vim.fn.getreg('/'):gsub("\\C\\V\\<(.*)\\>", "%1")
-    require('search').open({default_text=w})
+    -- local w = vim.fn.getreg('/'):gsub("\\C\\V\\<(.*)\\>", "%1")
+    require('search').open({default_text=""})
   end,
   { desc = 'Open search' })
 

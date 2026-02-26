@@ -5,6 +5,10 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+if [ -n "${GHOSTTY_RESOURCES_DIR}" ]; then
+    builtin source "${GHOSTTY_RESOURCES_DIR}/shell-integration/zsh/ghostty-integration"
+fi
+
 CASE_SENSITIVE="true"
 CLICOLOR=1
 
@@ -16,6 +20,7 @@ export ZPLUG_HOME=/opt/homebrew/opt/zplug
 source $ZPLUG_HOME/init.zsh
 zplug "zdharma/fast-syntax-highlighting", as:plugin, defer:2
 zplug load
+
 # Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
@@ -43,11 +48,19 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 # Edit command line in Vim on ^X^E
 autoload -z edit-command-line
 zle -N edit-command-line
-bindkey "^X^E" edit-command-line
+bindkey "^E" edit-command-line
 
 export SDKROOT=$(xcrun -sdk macosx --show-sdk-path)
-export PATH=/opt/homebrew/opt/openssl@3/bin:$PATH
-export PATH=/usr/local/bin:$PATH
+export PATH=$PATH:/opt/homebrew/opt/openssl@3/bin
+export PATH=$PATH:/usr/local/bin
+export PATH=$PATH:$HOME/.local/bin
+
+# Go PATH
+export GOPATH=$HOME/go
+export PATH="$GOPATH/bin:$PATH"
+
+# Use default /bin binaries instead of Homebrew ones
+export PATH="/bin:$PATH"
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
@@ -66,3 +79,28 @@ eval "$(direnv hook zsh)"
 # Increase the timeout for triggering the warning message
 # on long running commands invoked by `direnv`
 export DIRENV_WARN_TIMEOUT=60s
+
+. "$HOME/.local/bin/env"
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+# Fix for nvim running slow
+export UV_USE_IO_URING=1
+
+# Added by Antigravity
+export PATH="/Users/aleksanderarruda/.antigravity/antigravity/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/Users/aleksanderarruda/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+# bun completions
+[ -s "/Users/aleksanderarruda/.bun/_bun" ] && source "/Users/aleksanderarruda/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
